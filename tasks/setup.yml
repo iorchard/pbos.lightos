@@ -64,6 +64,7 @@
     marker: "# {mark} LIGHTOS BACKEND BLOCK"
     block: |
       [lightos]
+      image_volume_cache_enabled = True
       volume_driver = {{ volume_driver }}
       lightos_api_address = {% for i in lightos_api_address %}{{ i }}{% if not loop.last %},{% endif %}{% endfor +%}
       lightos_api_port = {{ lightos_api_port }}
