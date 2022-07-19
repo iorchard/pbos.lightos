@@ -1,0 +1,21 @@
+---
+pkg_state: "latest"
+prereq_pkgs:
+  - ca-certificates
+  - curl
+
+packages:
+  - discovery-client
+
+conf_dir: "/etc/cinder"
+cinder_conf: "{{ conf_dir }}/cinder.conf"
+
+os_controller_service_name:
+  - discovery-client.service
+  - openstack-cinder-api.service
+  - openstack-cinder-volume.service
+
+os_compute_service_name:
+  - discovery-client.service
+  - openstack-nova-compute.service
+...

@@ -1,0 +1,23 @@
+---
+- name: Setup | check if volume type exists
+  ansible.builtin.command: >-
+    openstack --os-cloud=pbos volume type show -c id -f value {{ volume_type.name }}
+  register: _is_vol_type
+  delegate_to: "{{ groups['controller'][0] }}"
+  run_once: true
+  failed_when: _is_vol_type.rc not in [0, 1]
+
+- name: Setup | create volume type if it does not exist
+  ansible.builtin.command: >-
+    openstack --os-cloud=pbos volume type create --private \
+      --property volume_backend_name={{ volume_type.name }} \
+      --property lightos:num_replicas={{ volume_type.replicas }} \
+      {{ volume_type.name }}
+  delegate_to: "{{ groups['controller'][0] }}"
+  run_once: true
+  register: _result
+  until: _result.rc == 0
+  retries: 3
+  delay: 3
+  when: _is_vol_type.rc == 1
+...

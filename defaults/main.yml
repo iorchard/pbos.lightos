@@ -1,0 +1,17 @@
+---
+offline: false
+openstack_release: "yoga"
+
+lightos_module_file: "/etc/modules-load.d/lightos.conf"
+
+volume_driver: "cinder.volume.drivers.lightos.LightOSVolumeDriver"
+lightos_api_address: ~
+lightos_api_port: 443
+lightos_default_compression_enabled: "False"
+lightos_default_num_replicas: 3
+lightos_skip_ssl_verify: "True"
+lightos_jwt: ~
+volume_type:
+  name: "lightos"
+  replicas: 3
+...

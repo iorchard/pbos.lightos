@@ -1,0 +1,5 @@
+[lightos]
+baseurl = https://dl.lightbitslabs.com/nCMLCP63LSNF6sxp/lightos-2-3-x-ga/rpm/el/7/$basearch
+gpgcheck = 0
+name = lightos
+sslverify = 0

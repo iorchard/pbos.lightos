@@ -1,0 +1,95 @@
+---
+- name: Setup | add lightos.conf module file
+  ansible.builtin.copy:
+    dest: "{{ lightos_module_file }}"
+    content: |
+      nvme-core multipath=Y
+      nvme-tcp
+    owner: "root"
+    group: "root"
+    mode: "0644"
+  become: true
+
+- name: Setup | load the module
+  community.general.modprobe:
+    name: "{{ item.name }}"
+    state: present
+    params: "{{ item.parameters }}"
+  become: true
+  loop:
+    - {name: 'nvme-core', parameters: 'multipath=Y'}
+    - {name: 'nvme-tcp', parameters: ''}
+
+- name: Setup | check lightos is in enabled_backends
+  ansible.builtin.lineinfile:
+    path: "{{ cinder_conf }}"
+    regexp: '^enabled_backends.+lightos'
+    state: absent
+  check_mode: true
+  register: result
+  become: true
+  when: inventory_hostname in groups['cinder']
+
+- name: Setup | debug
+  ansible.builtin.debug:
+    msg: "{{ result }}"
+  when: inventory_hostname in groups['cinder']
+
+- name: Setup | add lightos to enabled_backends in cinder.conf
+  ansible.builtin.replace:
+    path: "{{ cinder_conf }}"
+    regexp: '^(enabled_backends.+)$'
+    replace: '\1,lightos'
+  become: true
+  notify:
+    - systemctl restart controller service
+  when:
+    - inventory_hostname in groups['cinder']
+    - result is not changed
+
+- name: Setup | change default_volume_type to lightos in cinder.conf
+  ansible.builtin.lineinfile:
+    path: "{{ cinder_conf }}"
+    regexp: '^default_volume_type.*$'
+    line: 'default_volume_type = lightos'
+  become: true
+  notify:
+    - systemctl restart controller service
+  when: inventory_hostname in groups['cinder']
+
+- name: Setup | add lightos backend section in cinder.conf
+  ansible.builtin.blockinfile:
+    path: "{{ cinder_conf }}"
+    insertafter: EOF
+    marker: "# {mark} LIGHTOS BACKEND BLOCK"
+    block: |
+      [lightos]
+      volume_driver = {{ volume_driver }}
+      lightos_api_address = {% for i in lightos_api_address %}{{ i }}{% if not loop.last %},{% endif %}{% endfor +%}
+      lightos_api_port = {{ lightos_api_port }}
+      lightos_default_compression_enabled = {{ lightos_default_compression_enabled }}
+      lightos_default_num_replicas = {{ lightos_default_num_replicas }}
+      volume_backend_name = {{ volume_type.name }}
+      lightos_skip_ssl_verify = {{ lightos_skip_ssl_verify }}
+      lightos_jwt = {{ lightos_jwt }}
+  become: true
+  notify:
+    - systemctl restart controller service
+  when: inventory_hostname in groups['cinder']
+
+- name: Setup | create volume type
+  ansible.builtin.include_tasks: volume_type.yml
+
+- name: Setup | restart nova compute service on all compute nodes
+  ansible.builtin.service:
+    name: "{{ item }}"
+    state: "restarted"
+    enabled: true
+  register: _restart_service
+  until: _restart_service.state == "started"
+  retries: 3
+  delay: 3
+  become: true
+  loop: "{{ os_compute_service_name }}"
+  when: inventory_hostname in groups['compute']
+...
