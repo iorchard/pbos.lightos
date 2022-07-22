@@ -2,7 +2,9 @@
 offline: false
 openstack_release: "yoga"
 
-lightos_module_file: "/etc/modules-load.d/lightos.conf"
+lightos_modules: 
+  - {filename: "/etc/modules-load.d/lightos.conf", content: "nvme-tcp"}
+  - {filename: "/etc/modprobe.d/lightos.conf", content: "options nvme-core multipath=Y"}
 
 volume_driver: "cinder.volume.drivers.lightos.LightOSVolumeDriver"
 lightos_api_address: ~

@@ -1,14 +1,13 @@
 ---
-- name: Setup | add lightos.conf module file
+- name: Setup | add lightos module files
   ansible.builtin.copy:
-    dest: "{{ lightos_module_file }}"
-    content: |
-      nvme-core multipath=Y
-      nvme-tcp
+    dest: "{{ item.filename }}"
+    content: "{{ item.content }}"
     owner: "root"
     group: "root"
     mode: "0644"
   become: true
+  loop: "{{ lightos_modules }}"
 
 - name: Setup | load the module
   community.general.modprobe:
